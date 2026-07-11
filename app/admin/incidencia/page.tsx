@@ -690,7 +690,7 @@ export default function IncidenciasPage() {
                     <TableCell className="pl-6 text-muted-foreground font-mono text-xs">
                       {(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
                     </TableCell>
-                    <TableCell className="py-4 max-w-[180px]">
+                    <TableCell className="py-4 max-w-[200px]">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 flex-shrink-0">
                           <User className="h-5 w-5" />
@@ -700,7 +700,7 @@ export default function IncidenciasPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[240px]">
+                    <TableCell className="max-w-[200px]">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-bold text-foreground line-clamp-1">{item.inciTitulo}</span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1 line-clamp-1">
@@ -709,9 +709,9 @@ export default function IncidenciasPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell><PrioridadBadge prioridad={item.inciPrioridad} /></TableCell>
-                    <TableCell><EstadoBadge estado={item.inciEstado} /></TableCell>
-                    <TableCell className="max-w-[40px] text-left">
+                    <TableCell className="max-w-[40px]"><PrioridadBadge prioridad={item.inciPrioridad} /></TableCell>
+                    <TableCell className="max-w-[100px]"><EstadoBadge estado={item.inciEstado} /></TableCell>
+                    <TableCell className="max-w-[40px] text-start">
                       <span className="flex items-start justify-start gap-1.5 text-xs text-muted-foreground font-medium">
                         <CalendarDays className="h-3.5 w-3.5" />
                         {formatDate(item.inciFechCrea)}

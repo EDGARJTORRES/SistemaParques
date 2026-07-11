@@ -57,8 +57,8 @@ export default function LoginPage() {
           <div className="space-y-8">
             <div>
               <h2 className="text-4xl md:text-5xl font-black leading-[1.1] tracking-tight text-white drop-shadow-sm mb-6">
-                Gestión para el<br/>
-                <span className="text-white/90">mantenimiento y control de parques</span>
+                Sistema Informatico de <br/>
+                <span className="text-white/90">Gestión de Parques y Jardines</span>
               </h2>
               <p className="mt-4 text-md text-white/70 leading-relaxed max-w-md">
                 Optimiza el monitoreo, la conservación y el seguimiento de áreas verdes  en una sola plataforma centralizada.
