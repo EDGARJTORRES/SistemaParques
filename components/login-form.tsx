@@ -64,8 +64,8 @@ export function LoginForm() {
     setTimeout(() => {
       const rol = (data.nombreRol || "").toLowerCase()
       if (rol === "admin" || rol === "administrador") window.location.href = "/admin"
-      else if (rol === "docente") window.location.href = "/docente"
-      else if (rol === "estudiante") window.location.href = "/mis-clases/"
+      else if (rol === "supervisor") window.location.href = "/admin"
+      else if (rol === "subgerente") window.location.href = "/admin"
       else window.location.href = "/"
     }, 800)
   }

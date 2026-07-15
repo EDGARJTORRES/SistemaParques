@@ -203,7 +203,7 @@ export default function AdminLayout({
   }
 
   return (
-    <RouteGuard allowedRoles={["admin", "administrador"]}>
+    <RouteGuard allowedRoles={["admin", "administrador","supervisor","subgerente"]}>
       <SidebarProvider style={{ "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
       <AdminSidebar pathname={pathname} user={user} onLogout={handleLogout} totalMatriculas={totalMatriculas} />
       <SidebarInset className="bg-sidebar">

@@ -654,7 +654,7 @@ export default function IncidenciasPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por título, dirección o ciudadano..."
-                className="pl-10 h-10 rounded-xl bg-background border-border/50"
+                className="pl-10 h-10 rounded-xl bg-card border-border/50"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
               />

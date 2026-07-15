@@ -29,6 +29,10 @@ function getRolHome(rol: string): string {
     case "admin":
     case "administrador":
       return "/admin"
+    case "supervisor":
+      return "/admin"
+    case "subgerente":
+      return "/admin"
     default:
       return "/"
   }
