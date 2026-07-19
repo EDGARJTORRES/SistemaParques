@@ -11,6 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio para la gestión de abastecimiento de materiales y bienes del área de parques.
+ * Permite consultar bienes disponibles, gestionar personal activo, registrar obreros,
+ * crear y administrar asignaciones de materiales a obreros, y controlar el retiro de bienes.
+ */
 @Service
 public class AbastecimientoService {
 
@@ -34,7 +39,7 @@ public class AbastecimientoService {
 
     // ── BIENES ────────────────────────────────────────────────────────────────
 
-    /** Trae los bienes de depe_id 156 y 158 con nombre del objeto */
+    /** Verificar disponibilidad de materiales (bienes sin asignación activa) */
     public List<BienDTO> getBienesDisponibles() {
         String sql =
             "SELECT " +
@@ -69,7 +74,7 @@ public class AbastecimientoService {
 
     // ── PERSONAL ──────────────────────────────────────────────────────────────
 
-    /** Trae todo el personal activo de sc_escalafon.tb_persona */
+    /** Consultar personal del mantenimiento */
     public List<PersonaDTO> getPersonal() {
         String sql =
             "SELECT " +
@@ -126,23 +131,21 @@ public class AbastecimientoService {
 
     // ── ASIGNACIONES ─────────────────────────────────────────────────────────
 
+    /** Obtiene la lista completa de todas las asignaciones de materiales */
     public List<AsignacionDTO> getAsignaciones() {
         return asignacionRepo.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    /** Obtiene una asignación específica por su ID */
     public AsignacionDTO getAsignacionById(Long id) {
         Asignacion a = asignacionRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Asignación no encontrada: " + id));
         return toDTO(a);
     }
 
-    /**
-     * Crea una asignación nueva.
-     * Si el pers_id aún no está en tb_obrero se registra automáticamente.
-     * bienIds: lista de bien_id a asignar
-     */
+    /** Asignar recurso de materiales (crea o actualiza asignación) */
     @Transactional
     public AsignacionDTO crearAsignacion(AsignacionDTO dto) {
         // dto.obrId viene con el pers_id seleccionado en el frontend
@@ -205,6 +208,7 @@ public class AbastecimientoService {
         return toDTO(asignacionRepo.save(a));
     }
 
+    /** Desactiva una asignación cambiando su estado a INACTIVO */
     @Transactional
     public void desactivarAsignacion(Long id) {
         Asignacion a = asignacionRepo.findById(id)
@@ -213,6 +217,7 @@ public class AbastecimientoService {
         asignacionRepo.save(a);
     }
 
+    /** Reactiva una asignación cambiando su estado a ACTIVO */
     @Transactional
     public AsignacionDTO reactivarAsignacion(Long id) {
         Asignacion a = asignacionRepo.findById(id)

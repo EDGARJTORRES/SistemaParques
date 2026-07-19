@@ -16,6 +16,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio para la gestión de actividades de mantenimiento de parques.
+ * Proporciona catálogos de supervisores, obreros, tipos de mantenimiento, parques e incidencias.
+ * Permite crear, actualizar, consultar y cambiar el estado de mantenimientos,
+ * así como asignar obreros a las actividades de mantenimiento.
+ */
 @Service
 public class MantenimientoService {
 
@@ -133,15 +139,18 @@ public class MantenimientoService {
 
     // ── CRUD Mantenimiento ────────────────────────────────────────────────────
 
+    /** Obtiene la lista completa de todos los mantenimientos */
     public List<MantenimientoDTO> getAll() {
         return mantRepo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    /** Obtiene un mantenimiento específico por su ID */
     public MantenimientoDTO getById(Integer id) {
         return toDTO(mantRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Mantenimiento no encontrado: " + id)));
     }
 
+    /** Crea un nuevo mantenimiento y asigna los obreros especificados */
     @Transactional
     public MantenimientoDTO create(MantenimientoDTO dto) {
         Mantenimiento m = new Mantenimiento();
@@ -151,6 +160,7 @@ public class MantenimientoService {
         return toDTO(saved);
     }
 
+    /** Actualiza un mantenimiento existente y reemplaza los obreros asignados si se especifican */
     @Transactional
     public MantenimientoDTO update(Integer id, MantenimientoDTO dto) {
         Mantenimiento m = mantRepo.findById(id)
@@ -164,6 +174,7 @@ public class MantenimientoService {
         return toDTO(saved);
     }
 
+    /** Cambia el estado de un mantenimiento (ej: PENDIENTE, EN_PROCESO, COMPLETADO) */
     @Transactional
     public void cambiarEstado(Integer id, String estado) {
         Mantenimiento m = mantRepo.findById(id)

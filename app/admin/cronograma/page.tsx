@@ -141,7 +141,7 @@ function CalendarioView({ mantenimientos, onSelect }: {
   )
 }
 
-// ── FormView ──────────────────────────────────────────────────────────────────
+// ── FormView ──────────────────────aslo────────────────────────────────────────────
 function FormView({ editingItem, formData, setFormData, onSubmit, onCancel, catalogos, loadingCatalog }: {
   editingItem: Mantenimiento | null
   formData: Mantenimiento

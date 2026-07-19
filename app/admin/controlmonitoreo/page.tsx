@@ -527,10 +527,10 @@ export default function ControlMonitoreoPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black flex items-center gap-3">
+          <h3 className="text-2xl font-black flex items-center gap-3">
             <Monitor className="h-8 w-8 text-primary" />
-            Control y Monitoreo
-          </h2>
+            Control y Monitoreo de Mantenimientos programados
+          </h3>
           <p className="text-muted-foreground text-sm mt-0.5">
             Registra el avance en tiempo real de los mantenimientos programados
           </p>
@@ -542,7 +542,7 @@ export default function ControlMonitoreoPage() {
           className="gap-2 rounded-xl h-10 font-bold self-start sm:self-auto"
         >
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          Actualizar
+          Actualizar Cronograma
         </Button>
       </div>
 

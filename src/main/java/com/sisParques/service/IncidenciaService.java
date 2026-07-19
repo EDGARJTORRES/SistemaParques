@@ -11,6 +11,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio para la gestión de incidencias reportadas por ciudadanos.
+ * Permite registrar, consultar, actualizar y cambiar el estado de incidencias.
+ * Soporta el registro de incidencias con ciudadanos existentes o la creación automática
+ * de nuevos ciudadanos.
+ */
 @Service
 public class IncidenciaService {
 
@@ -26,6 +32,7 @@ public class IncidenciaService {
         this.ciudadanoService = ciudadanoService;
     }
 
+    /** Obtiene la lista completa de todas las incidencias */
     public List<IncidenciaDTO> getAll() {
         return incidenciaRepository.findAll()
                 .stream()
@@ -33,12 +40,14 @@ public class IncidenciaService {
                 .collect(Collectors.toList());
     }
 
+    /** Obtiene una incidencia específica por su ID */
     public IncidenciaDTO getById(Integer id) {
         Incidencia i = incidenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con id: " + id));
         return toDTO(i);
     }
 
+    /** Obtiene todas las incidencias reportadas por un ciudadano específico */
     public List<IncidenciaDTO> getByCiudadano(Integer ciudId) {
         return incidenciaRepository.findByCiudadanoCiudId(ciudId)
                 .stream()
@@ -46,6 +55,7 @@ public class IncidenciaService {
                 .collect(Collectors.toList());
     }
 
+    /** Obtiene todas las incidencias filtradas por su estado */
     public List<IncidenciaDTO> getByEstado(String estado) {
         return incidenciaRepository.findByInciEstado(estado)
                 .stream()
@@ -88,6 +98,7 @@ public class IncidenciaService {
         return toDTO(incidenciaRepository.save(i));
     }
 
+    /** Actualiza una incidencia existente, permitiendo cambiar el ciudadano asociado */
     public IncidenciaDTO update(Integer id, IncidenciaDTO dto) {
         Incidencia i = incidenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con id: " + id));
@@ -103,6 +114,7 @@ public class IncidenciaService {
         return toDTO(incidenciaRepository.save(i));
     }
 
+    /** Cambia el estado de una incidencia (ej: PENDIENTE, EN_PROCESO, RESUELTO) */
     public IncidenciaDTO cambiarEstado(Integer id, String nuevoEstado) {
         Incidencia i = incidenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con id: " + id));
@@ -110,6 +122,7 @@ public class IncidenciaService {
         return toDTO(incidenciaRepository.save(i));
     }
 
+    /** Elimina lógicamente una incidencia cambiando su estado a CANCELADO */
     public void delete(Integer id) {
         Incidencia i = incidenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con id: " + id));
