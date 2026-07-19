@@ -5,7 +5,8 @@ import {
   Monitor, Search, RefreshCw, CheckSquare, Square,
   Clock, CheckCircle2, Ban, PlayCircle, Wrench,
   MapPin, Users, AlertTriangle, Calendar, ChevronDown,
-  ChevronRight, CalendarPlus, Send, X, Info
+  ChevronRight, CalendarPlus, Send, X, Info,
+  FileText, FileWarning, Download
 } from "lucide-react"
 import { logAction } from "@/lib/logging"
 import { useAuth } from "@/lib/auth-context"
@@ -14,6 +15,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 const API_MANT    = "http://localhost:8081/api/mantenimiento"
 const API_MON     = "http://localhost:8081/api/monitoreo"
@@ -60,7 +63,510 @@ interface Mantenimiento {
   timaNombres:      string[]
   obreros:          { obrId: number; nombreCompleto: string }[]
 }
+const generarReporteMantenimiento = (
+  item: Mantenimiento,
+  tipos: Tipo[],
+  progress: Progress[],
+  tipoReporte: "COMPLETO" | "INCUMPLIMIENTO"
+) => {
+  const doc = new jsPDF("portrait", "mm", "a4")
 
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+
+  const fechaGeneracion = new Date()
+
+  const fechaFin = item.mantFechaFin
+    ? new Date(item.mantFechaFin + "T00:00:00")
+    : null
+
+  const fechaInicio = item.mantFechaIni
+    ? new Date(item.mantFechaIni + "T00:00:00")
+    : null
+
+  const hoy = new Date()
+
+  const diasIncumplimiento = fechaFin
+    ? Math.max(
+        0,
+        Math.floor(
+          (hoy.getTime() - fechaFin.getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0
+
+  const esCompleto = tipoReporte === "COMPLETO"
+
+  // =========================================================
+  // FUNCIONES AUXILIARES
+  // =========================================================
+
+  const formatoFecha = (fecha?: string | null) => {
+    if (!fecha) return "No registrado"
+
+    return new Date(fecha + "T00:00:00")
+      .toLocaleDateString("es-PE")
+  }
+
+  const formatoFechaHora = (fecha?: string | null) => {
+    if (!fecha) return "No registrado"
+
+    return new Date(fecha).toLocaleString("es-PE")
+  }
+
+  const agregarEncabezado = () => {
+    doc.setFillColor(30, 64, 175)
+    doc.rect(0, 0, pageWidth, 30, "F")
+
+    doc.setTextColor(255, 255, 255)
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(16)
+
+    doc.text(
+      esCompleto
+        ? "REPORTE DE MANTENIMIENTO"
+        : "REPORTE DE INCUMPLIMIENTO",
+      14,
+      13
+    )
+
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "normal")
+
+    doc.text(
+      "Sistema de Gestión de Mantenimientos",
+      14,
+      20
+    )
+
+    doc.text(
+      `Generado: ${fechaGeneracion.toLocaleString("es-PE")}`,
+      pageWidth - 14,
+      20,
+      { align: "right" }
+    )
+
+    doc.setTextColor(0, 0, 0)
+  }
+
+  const agregarPiePagina = () => {
+    const totalPaginas = (doc as any).internal.getNumberOfPages()
+
+    for (let i = 1; i <= totalPaginas; i++) {
+      doc.setPage(i)
+
+      doc.setFontSize(8)
+      doc.setTextColor(120, 120, 120)
+
+      doc.text(
+        "Documento generado por el Sistema de Gestión de Mantenimientos",
+        14,
+        pageHeight - 10
+      )
+
+      doc.text(
+        `Página ${i} de ${totalPaginas}`,
+        pageWidth - 14,
+        pageHeight - 10,
+        { align: "right" }
+      )
+    }
+
+    doc.setTextColor(0, 0, 0)
+  }
+
+  // =========================================================
+  // ENCABEZADO
+  // =========================================================
+
+  agregarEncabezado()
+
+  let y = 42
+
+  // =========================================================
+  // IDENTIFICACIÓN DEL MANTENIMIENTO
+  // =========================================================
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(12)
+
+  doc.text(
+    "1. IDENTIFICACIÓN DEL MANTENIMIENTO",
+    14,
+    y
+  )
+
+  y += 7
+
+  autoTable(doc, {
+    startY: y,
+    body: [
+      [
+        "Código",
+        `MANT-${String(item.mantId).padStart(6, "0")}`
+      ],
+      [
+        "Título",
+        item.mantTitulo || "No registrado"
+      ],
+      [
+        "Parque",
+        item.parqNombre || "No registrado"
+      ],
+      [
+        "Responsable",
+        item.responsableNombre || "No asignado"
+      ],
+      [
+        "Estado actual",
+        item.mantEstado
+      ],
+    ],
+    theme: "grid",
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: {
+        fontStyle: "bold",
+        cellWidth: 42
+      },
+      1: {
+        cellWidth: 140
+      }
+    }
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 12
+
+  // =========================================================
+  // INFORMACIÓN DEL PLAZO
+  // =========================================================
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(12)
+
+  doc.text(
+    "2. INFORMACIÓN DEL PLAZO",
+    14,
+    y
+  )
+
+  y += 7
+
+  autoTable(doc, {
+    startY: y,
+    body: [
+      [
+        "Fecha de inicio",
+        formatoFecha(item.mantFechaIni)
+      ],
+      [
+        "Fecha límite programada",
+        formatoFecha(item.mantFechaFin)
+      ],
+      [
+        "Fecha de generación",
+        fechaGeneracion.toLocaleDateString("es-PE")
+      ],
+      [
+        "Situación del plazo",
+        esCompleto
+          ? "Cumplido dentro del plazo"
+          : "Plazo incumplido"
+      ],
+      ...(esCompleto
+        ? []
+        : [
+            [
+              "Días de incumplimiento",
+              `${diasIncumplimiento} día(s)`
+            ]
+          ])
+    ],
+    theme: "grid",
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: {
+        fontStyle: "bold",
+        cellWidth: 55
+      },
+      1: {
+        cellWidth: 127
+      }
+    }
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 12
+
+  // =========================================================
+  // PERSONAL ASIGNADO
+  // =========================================================
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(12)
+
+  doc.text(
+    "3. PERSONAL ASIGNADO",
+    14,
+    y
+  )
+
+  y += 7
+
+  const personalData = item.obreros?.length
+    ? item.obreros.map((obrero, index) => [
+        index + 1,
+        obrero.nombreCompleto
+      ])
+    : [
+        ["—", "No se registró personal asignado"]
+      ]
+
+  autoTable(doc, {
+    startY: y,
+    head: [
+      ["N°", "Personal asignado"]
+    ],
+    body: personalData,
+    theme: "grid",
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: {
+        cellWidth: 15
+      },
+      1: {
+        cellWidth: 167
+      }
+    }
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 12
+
+  // =========================================================
+  // DETALLE DE ACTIVIDADES
+  // =========================================================
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(12)
+
+  doc.text(
+    "4. DETALLE DE ACTIVIDADES Y AVANCE",
+    14,
+    y
+  )
+
+  y += 7
+
+  const actividades = (item.timaIds ?? []).map(
+    (timaId, index) => {
+
+      const tipo = tipos.find(
+        t => t.timaId === timaId
+      )
+
+      const avance = progress.find(
+        p => p.timaId === timaId
+      )
+
+      const completado =
+        esCompleto
+          ? true
+          : avance?.mtpCompletado === true
+
+      return [
+        index + 1,
+        tipo?.timaNombre ?? `Tipo #${timaId}`,
+        completado
+          ? "COMPLETADO"
+          : "PENDIENTE",
+        avance?.mtpFechaCheck
+          ? formatoFechaHora(avance.mtpFechaCheck)
+          : "No registrado"
+      ]
+    }
+  )
+
+  autoTable(doc, {
+    startY: y,
+    head: [
+      [
+        "N°",
+        "Actividad / Tipo de mantenimiento",
+        "Estado",
+        "Fecha de verificación"
+      ]
+    ],
+    body: actividades.length
+      ? actividades
+      : [
+          [
+            "—",
+            "No se registraron actividades",
+            "—",
+            "—"
+          ]
+        ],
+    theme: "grid",
+    styles: {
+      fontSize: 8,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: {
+        cellWidth: 12
+      },
+      1: {
+        cellWidth: 85
+      },
+      2: {
+        cellWidth: 35
+      },
+      3: {
+        cellWidth: 50
+      }
+    }
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 12
+
+  // =========================================================
+  // RESUMEN DEL CUMPLIMIENTO
+  // =========================================================
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(12)
+
+  doc.text(
+    "5. RESUMEN DEL CUMPLIMIENTO",
+    14,
+    y
+  )
+
+  y += 7
+
+  const totalActividades = item.timaIds?.length ?? 0
+
+  const actividadesCompletadas = esCompleto
+    ? totalActividades
+    : item.timaIds?.filter(id =>
+        progress.find(
+          p =>
+            p.timaId === id &&
+            p.mtpCompletado
+        )
+      ).length ?? 0
+
+  const actividadesPendientes =
+    totalActividades - actividadesCompletadas
+
+  const porcentaje =
+    totalActividades > 0
+      ? Math.round(
+          (actividadesCompletadas /
+            totalActividades) *
+            100
+        )
+      : 0
+
+  autoTable(doc, {
+    startY: y,
+    body: [
+      [
+        "Total de actividades",
+        totalActividades
+      ],
+      [
+        "Actividades completadas",
+        actividadesCompletadas
+      ],
+      [
+        "Actividades pendientes",
+        esCompleto
+          ? 0
+          : actividadesPendientes
+      ],
+      [
+        "Porcentaje de avance",
+        `${porcentaje}%`
+      ],
+      [
+        "Resultado",
+        esCompleto
+          ? "MANTENIMIENTO COMPLETADO"
+          : "MANTENIMIENTO INCUMPLIDO"
+      ]
+    ],
+    theme: "grid",
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
+    columnStyles: {
+      0: {
+        fontStyle: "bold",
+        cellWidth: 70
+      },
+      1: {
+        cellWidth: 112
+      }
+    }
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 12
+
+  // =========================================================
+  // OBSERVACIONES
+  // =========================================================
+
+  if (item.mantObservacion) {
+
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(12)
+
+    doc.text(
+      "6. OBSERVACIONES",
+      14,
+      y
+    )
+
+    y += 7
+
+    const observacion = doc.splitTextToSize(
+      item.mantObservacion,
+      175
+    )
+
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(9)
+
+    doc.text(
+      observacion,
+      14,
+      y
+    )
+  }
+
+  // =========================================================
+  // PIE DE PÁGINA
+  // =========================================================
+
+  agregarPiePagina()
+
+  const nombreArchivo = esCompleto
+    ? `reporte-completo-MANT-${item.mantId}.pdf`
+    : `reporte-incumplimiento-MANT-${item.mantId}.pdf`
+
+  doc.save(nombreArchivo)
+}
 // ── Componente Panel de Monitoreo de un Mantenimiento ─────────────────────────
 function MonitoreoCard({
   item,
@@ -262,16 +768,86 @@ function MonitoreoCard({
             </div>
           )}
         </div>
-
-        {/* Estado Badge + Chevron */}
+        {/* Acciones + Estado Badge + Chevron */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge className={cn("text-[10px] font-black border px-2.5 py-0.5 rounded-full", estadoConfig.color)}>
+
+          {/* Reporte para mantenimiento COMPLETADO */}
+          {item.mantEstado === "COMPLETADO" && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              title="Exportar reporte completo"
+              onClick={(e) => {
+                e.stopPropagation()
+
+                generarReporteMantenimiento(
+                  item,
+                  tipos,
+                  progress,
+                  "COMPLETO"
+                )
+              }}
+              className="h-8 px-3 rounded-xl gap-1.5
+                        border-emerald-300
+                        text-emerald-600
+                        hover:bg-emerald-50"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden lg:inline text-[10px] font-bold">
+                Exportar
+              </span>
+            </Button>
+          )}
+
+          {/* Reporte para mantenimiento VENCIDO */}
+          {isVencido && item.mantEstado !== "COMPLETADO" && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              title="Exportar reporte de incumplimiento"
+              onClick={(e) => {
+                e.stopPropagation()
+
+                generarReporteMantenimiento(
+                  item,
+                  tipos,
+                  progress,
+                  "INCUMPLIMIENTO"
+                )
+              }}
+              className="h-8 px-3 rounded-xl gap-1.5
+                        border-rose-300
+                        text-rose-600
+                        hover:bg-rose-50"
+            >
+              <FileWarning className="h-4 w-4" />
+              <span className="hidden lg:inline text-[10px] font-bold">
+                Exportar
+              </span>
+            </Button>
+          )}
+
+          <Badge
+            className={cn(
+              "text-[10px] font-black border px-2.5 py-0.5 rounded-full",
+              estadoConfig.color
+            )}
+          >
             <EstadoIcon className="h-3 w-3 mr-1" />
             {estadoConfig.label}
           </Badge>
-          <div className={cn("transition-transform duration-300", expanded ? "rotate-90" : "rotate-0")}>
+
+          <div
+            className={cn(
+              "transition-transform duration-300",
+              expanded ? "rotate-90" : "rotate-0"
+            )}
+          >
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
+
         </div>
       </div>
 
