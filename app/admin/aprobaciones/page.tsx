@@ -52,26 +52,27 @@ function SolicitudCard({
     ? new Date(item.amplFechaCrea).toLocaleString("es-PE")
     : "—"
 
-  const handleResolver = async (estado: "APROBADA" | "RECHAZADA") => {
-    if (estado === "RECHAZADA" && !resolucion.trim()) {
+    const handleResolver = async (estado: "APROBADO" | "RECHAZADO") => {
+    if (estado === "RECHAZADO" && !resolucion.trim()) {
       toast.error("Indica el motivo de rechazo")
       return
     }
     setSaving(true)
     try {
-      const res = await fetch(`${API_MON}/ampliaciones/${item.amplId}/resolver`, {
+      const accion = estado === "APROBADO" ? "APROBAR" : "RECHAZAR"
+      const res = await fetch(`${API_MON}/ampliaciones/${item.amplId}/evaluar`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          estado,
-          resolucion: resolucion.trim() || (estado === "APROBADA" ? "Ampliación aprobada por subgerencia" : ""),
-          usuarioId: userId,
+          accion,
+          resolucion: resolucion.trim() || (estado === "APROBADO" ? "Ampliación aprobada por subgerencia" : ""),
+          evaluadorId: userId,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       toast.success(
-        estado === "APROBADA"
+        estado === "APROBADO"
           ? "✅ Ampliación aprobada. Plazo extendido."
           : "Solicitud rechazada."
       )
@@ -170,7 +171,7 @@ function SolicitudCard({
           <div className="flex flex-col sm:flex-row gap-2 pt-1">
             <Button
               type="button"
-              onClick={() => handleResolver("APROBADA")}
+              onClick={() => handleResolver("APROBADO")}
               disabled={saving}
               className="flex-1 h-10 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
             >
@@ -191,7 +192,7 @@ function SolicitudCard({
             ) : (
               <Button
                 type="button"
-                onClick={() => handleResolver("RECHAZADA")}
+                onClick={() => handleResolver("RECHAZADO")}
                 disabled={saving}
                 className="flex-1 h-10 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
               >
@@ -281,13 +282,6 @@ export default function AprobacionesPage() {
         </Button>
       </div>
 
-      {/* Banner de rol */}
-      <div className="flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/20 p-4">
-        <UserCheck className="h-5 w-5 text-primary flex-shrink-0" />
-        <p className="text-xs font-medium text-foreground">
-          Esta vista es exclusiva de la <b>Subgerencia</b>. Solo tú puedes aprobar o rechazar las ampliaciones de tiempo.
-        </p>
-      </div>
 
       {/* Estadísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -365,9 +359,9 @@ export default function AprobacionesPage() {
               <div key={a.amplId} className="rounded-2xl border border-border/40 bg-card p-4 flex items-start gap-3">
                 <div className={cn(
                   "h-9 w-9 min-w-9 rounded-xl flex items-center justify-center flex-shrink-0",
-                  a.amplEstado === "APROBADA" ? "bg-emerald-100 dark:bg-emerald-900/20" : "bg-rose-100 dark:bg-rose-900/20"
+                  a.amplEstado === "APROBADO" ? "bg-emerald-100 dark:bg-emerald-900/20" : "bg-rose-100 dark:bg-rose-900/20"
                 )}>
-                  {a.amplEstado === "APROBADA"
+                  {a.amplEstado === "APROBADO"
                     ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                     : <Ban className="h-5 w-5 text-rose-600" />}
                 </div>
@@ -378,7 +372,7 @@ export default function AprobacionesPage() {
                     </p>
                     <Badge className={cn(
                       "text-[8px] font-black border px-1.5 py-0 rounded-full",
-                      a.amplEstado === "APROBADA"
+                      a.amplEstado === "APROBADO"
                         ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400"
                         : "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400"
                     )}>

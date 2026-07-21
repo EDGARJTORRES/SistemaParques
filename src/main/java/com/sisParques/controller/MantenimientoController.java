@@ -47,6 +47,29 @@ public class MantenimientoController {
         return ResponseEntity.ok(service.getIncidenciasEnProgreso());
     }
 
+    // ── REPORTES ──────────────────────────────────────────────────────────────
+
+    @GetMapping("/reportes/incompletos")
+    public ResponseEntity<List<Map<String, Object>>> getReporteIncompletos() {
+        return ResponseEntity.ok(service.getReporteIncompletos());
+    }
+
+    @GetMapping("/reportes/completados")
+    public ResponseEntity<Map<String, Object>> getReporteCompletados(
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin) {
+        return ResponseEntity.ok(service.getReporteCompletados(fechaInicio, fechaFin));
+    }
+
+    @PostMapping("/programar-tareas")
+    public ResponseEntity<?> programarTareas(@RequestBody Map<String, Object> programacion) {
+        try {
+            return ResponseEntity.ok(service.programarTareas(programacion));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
     @GetMapping

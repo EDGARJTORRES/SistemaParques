@@ -34,6 +34,9 @@ public class MantAmpliacion {
     @Column(name = "ampl_resolucion", columnDefinition = "TEXT")
     private String amplResolucion;
 
+    @Column(name = "ampl_evaluador_id")
+    private Integer amplEvaluadorId;
+
     @Column(name = "ampl_fecha_res")
     private LocalDateTime amplFechaRes;
 
@@ -108,6 +111,14 @@ public class MantAmpliacion {
 
     public void setAmplResolucion(String v) {
         this.amplResolucion = v;
+    }
+
+    public Integer getAmplEvaluadorId() {
+        return amplEvaluadorId;
+    }
+
+    public void setAmplEvaluadorId(Integer v) {
+        this.amplEvaluadorId = v;
     }
 
     public LocalDateTime getAmplFechaRes() {

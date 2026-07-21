@@ -53,8 +53,19 @@ public class AbastecimientoController {
 
     /** Verificar disponibilidad del personal */
     @GetMapping("/verificar-disponibilidad-personal")
-    public ResponseEntity<List<PersonaDTO>> verificarDisponibilidadPersonal() {
-        return ResponseEntity.ok(service.getPersonal());
+    public ResponseEntity<List<ObreroDTO>> verificarDisponibilidadPersonal() {
+        return ResponseEntity.ok(service.verificarDisponibilidadPersonal());
+    }
+
+    /** Asignar rol de mantenimiento a un obrero */
+    @PatchMapping("/obreros/{obrId}/rol")
+    public ResponseEntity<?> asignarRol(@PathVariable Integer obrId, @RequestBody Map<String, String> body) {
+        try {
+            String rol = body.get("rol");
+            return ResponseEntity.ok(service.asignarRol(obrId, rol));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     /** Asignar recurso del personal (registra obrero si no existe) */

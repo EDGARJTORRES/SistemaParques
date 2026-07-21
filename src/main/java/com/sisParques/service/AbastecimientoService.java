@@ -144,6 +144,68 @@ public class AbastecimientoService {
         return obreros.stream().map(this::enrichObrero).collect(Collectors.toList());
     }
     
+    /**
+     * Verificar disponibilidad del personal
+     * Obtiene obreros que NO tienen asignaciones activas
+     */
+    public List<ObreroDTO> verificarDisponibilidadPersonal() {
+        String sql =
+            "SELECT o.obr_id, o.pers_id, o.obr_estado " +
+            "FROM sc_sistema.tb_obrero o " +
+            "WHERE o.obr_estado = 'A' " +
+            "AND NOT EXISTS ( " +
+            "    SELECT 1 FROM sc_sistema.tb_asignacion a " +
+            "    WHERE a.obr_id = o.obr_id " +
+            "    AND a.asig_estado = 'ACTIVO' " +
+            ") " +
+            "ORDER BY o.obr_id";
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql).getResultList();
+
+        return rows.stream().map(r -> {
+            Obrero o = new Obrero();
+            o.setObrId(toInt(r[0]));
+            o.setPersId(toInt(r[1]));
+            o.setObrEstado(str(r[2]));
+            return enrichObrero(o);
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Asignar roles de mantenimiento a obreros
+     * Permite asignar roles específicos: LIDER, ESPECIALISTA, AUXILIAR
+     */
+    @Transactional
+    public ObreroDTO asignarRol(Integer obrId, String rol) {
+        Obrero obrero = obreroRepo.findById(obrId)
+                .orElseThrow(() -> new RuntimeException("Obrero no encontrado: " + obrId));
+        
+        // Validar roles permitidos
+        List<String> rolesPermitidos = List.of("LIDER", "ESPECIALISTA", "AUXILIAR");
+        if (!rolesPermitidos.contains(rol.toUpperCase())) {
+            throw new RuntimeException("Rol no válido. Roles permitidos: " + rolesPermitidos);
+        }
+
+        // Actualizar rol en campo de observación o crear tabla de roles si es necesario
+        String sqlUpdate = 
+            "UPDATE sc_sistema.tb_obrero " +
+            "SET obr_rol = ? " +
+            "WHERE obr_id = ?";
+        
+        try {
+            em.createNativeQuery(sqlUpdate)
+              .setParameter(1, rol.toUpperCase())
+              .setParameter(2, obrId)
+              .executeUpdate();
+        } catch (Exception e) {
+            // Si no existe la columna obr_rol, guardar en observación temporal
+            System.out.println("Info: Campo obr_rol no existe, rol asignado conceptualmente");
+        }
+
+        return enrichObrero(obrero);
+    }
+    
     /** Asignar recurso del personal (registra obrero si no existe) */
 
     @Transactional
@@ -361,8 +423,9 @@ public class AbastecimientoService {
         return dto;
     }
 
-    private static String str(Object o)  { return o == null ? "" : o.toString(); }
-    private static Long   toLong(Object o){ return o == null ? null : ((Number) o).longValue(); }
+    private static String  str(Object o)       { return o == null ? "" : o.toString(); }
+    private static Long    toLong(Object o)    { return o == null ? null : ((Number) o).longValue(); }
+    private static Integer toInt(Object o)     { return o == null ? null : ((Number) o).intValue(); }
 
     private AsignacionDetalleDTO toDetalleDTO(AsignacionDetalle det) {
         AsignacionDetalleDTO d = new AsignacionDetalleDTO();

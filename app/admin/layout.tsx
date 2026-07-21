@@ -14,6 +14,7 @@ import {
   Package,
   Hammer,
   Wrench,
+  ShieldCheck,
   FerrisWheel,
   Search,
   ChevronLeft,
@@ -111,6 +112,12 @@ const getMenuGroups = (totalMatriculas: number): MenuItem[] => [
     icon:  Calendar,
     label: "Consultar Cronograma",
     href: "/admin/cronograma",
+  },
+  {
+    type: "single",
+    icon:  ShieldCheck,
+    label: "Aprobaciones",
+    href: "/admin/aprobaciones",
   },
   {
     type: "single",

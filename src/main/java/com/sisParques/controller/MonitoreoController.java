@@ -50,6 +50,22 @@ public class MonitoreoController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+    @GetMapping("/{mantId}/estado-real")
+    public ResponseEntity<?> getEstadoReal(
+        @PathVariable Integer mantId) {
+        try {
+            return ResponseEntity.ok(
+                    monitoreoService.getEstadoReal(mantId)
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity
+            .badRequest()
+            .body(Map.of(
+                    "message",
+                    e.getMessage()
+            ));
+        }
+    }
 
     // ── POST: solicitar ampliación de plazo ────────────────────────────────────
     @PostMapping("/{mantId}/ampliaciones")
@@ -63,11 +79,33 @@ public class MonitoreoController {
         }
     }
 
+    // ── GET: todas las ampliaciones resueltas (aprobadas/rechazadas) ──────────
+    @GetMapping("/ampliaciones/resueltas")
+    public ResponseEntity<?> getAmpliacionesResueltas() {
+        try {
+            return ResponseEntity.ok(monitoreoService.getAmpliacionesResueltas());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     // ── GET: todas las ampliaciones pendientes (para admin) ────────────────────
     @GetMapping("/ampliaciones/pendientes")
     public ResponseEntity<?> getAmpliacionesPendientes() {
         try {
             return ResponseEntity.ok(monitoreoService.getAmpliacionesPendientes());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ── PATCH: procesar evaluación de ampliación ───────────────────────────────
+    @PatchMapping("/ampliaciones/{amplId}/evaluar")
+    public ResponseEntity<?> procesarAmpliacion(
+            @PathVariable Integer amplId,
+            @RequestBody Map<String, Object> decision) {
+        try {
+            return ResponseEntity.ok(monitoreoService.procesarAmpliacion(amplId, decision));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }

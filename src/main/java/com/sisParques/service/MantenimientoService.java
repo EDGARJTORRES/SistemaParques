@@ -314,6 +314,163 @@ public class MantenimientoService {
         m.setInciId(dto.getInciId()); // puede ser null
     }
 
+    // ── REPORTES ──────────────────────────────────────────────────────────────
+
+    /**
+     * Generar reporte de mantenimiento incompleto
+     * Obtiene mantenimientos vencidos, atrasados o con progreso incompleto
+     */
+    public List<java.util.Map<String, Object>> getReporteIncompletos() {
+        String sql = 
+            "WITH mantenimientos_con_estado AS (" +
+            "  SELECT m.mant_id, m.mant_titulo, m.mant_fecha_ini, m.mant_fecha_fin, " +
+            "         m.mant_estado, p.parq_nombre, u.nombres as responsable_nombre, " +
+            "         CASE " +
+            "           WHEN m.mant_fecha_fin < CURRENT_DATE AND m.mant_estado NOT IN ('COMPLETADO', 'CANCELADO') " +
+            "           THEN 'VENCIDO' " +
+            "           WHEN m.mant_estado = 'PENDIENTE' AND m.mant_fecha_ini < CURRENT_DATE " +
+            "           THEN 'ATRASADO' " +
+            "           ELSE m.mant_estado " +
+            "         END as estado_real, " +
+            "         CASE " +
+            "           WHEN m.mant_fecha_fin < CURRENT_DATE " +
+            "           THEN CURRENT_DATE - m.mant_fecha_fin " +
+            "           ELSE 0 " +
+            "         END as dias_vencido " +
+            "  FROM sc_sistema.tb_mantenimiento m " +
+            "  LEFT JOIN sc_sistema.tb_parque p ON p.parq_id = m.parq_id " +
+            "  LEFT JOIN sc_sistema.usuarios u ON u.id_usuario = m.pers_responsable " +
+            "  WHERE m.mant_estado NOT IN ('COMPLETADO', 'CANCELADO') " +
+            ") " +
+            "SELECT * FROM mantenimientos_con_estado " +
+            "WHERE estado_real IN ('VENCIDO', 'ATRASADO', 'PENDIENTE', 'EN_PROGRESO') " +
+            "ORDER BY dias_vencido DESC, mant_fecha_fin ASC";
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql).getResultList();
+        
+        return rows.stream().map(r -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("mantId", r[0]);
+            m.put("mantTitulo", str(r[1]));
+            m.put("mantFechaIni", r[2]);
+            m.put("mantFechaFin", r[3]);
+            m.put("mantEstado", str(r[4]));
+            m.put("parqNombre", str(r[5]));
+            m.put("responsableNombre", str(r[6]));
+            m.put("estadoReal", str(r[7]));
+            m.put("diasVencido", toInt(r[8]));
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Generar reporte de mantenimiento completado
+     * Obtiene estadísticas de mantenimientos completados por período
+     */
+    public java.util.Map<String, Object> getReporteCompletados(String fechaInicio, String fechaFin) {
+        // Mantenimientos completados en el período
+        String sqlCompletados = 
+            "SELECT m.mant_id, m.mant_titulo, m.mant_fecha_ini, m.mant_fecha_fin, " +
+            "       p.parq_nombre, u.nombres as responsable_nombre, " +
+            "       (m.mant_fecha_fin - m.mant_fecha_ini) as duracion_dias " +
+            "FROM sc_sistema.tb_mantenimiento m " +
+            "LEFT JOIN sc_sistema.tb_parque p ON p.parq_id = m.parq_id " +
+            "LEFT JOIN sc_sistema.usuarios u ON u.id_usuario = m.pers_responsable " +
+            "WHERE m.mant_estado = 'COMPLETADO' ";
+        
+        if (fechaInicio != null && fechaFin != null) {
+            sqlCompletados += "AND DATE(m.mant_fecha_crea) BETWEEN '" + fechaInicio + "' AND '" + fechaFin + "' ";
+        }
+        sqlCompletados += "ORDER BY m.mant_fecha_fin DESC";
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> completados = em.createNativeQuery(sqlCompletados).getResultList();
+
+        // Estadísticas generales
+        String sqlEstadisticas = 
+            "SELECT " +
+            "  COUNT(*) as total_completados, " +
+            "  AVG(EXTRACT(EPOCH FROM (m.mant_fecha_fin - m.mant_fecha_ini))/86400) as duracion_promedio, " +
+            "  COUNT(CASE WHEN m.mant_fecha_fin <= m.mant_fecha_fin THEN 1 END) as completados_a_tiempo, " +
+            "  COUNT(CASE WHEN m.mant_fecha_fin > m.mant_fecha_ini THEN 1 END) as completados_tarde " +
+            "FROM sc_sistema.tb_mantenimiento m " +
+            "WHERE m.mant_estado = 'COMPLETADO' ";
+        
+        if (fechaInicio != null && fechaFin != null) {
+            sqlEstadisticas += "AND DATE(m.mant_fecha_crea) BETWEEN '" + fechaInicio + "' AND '" + fechaFin + "'";
+        }
+
+        Object[] stats = (Object[]) em.createNativeQuery(sqlEstadisticas).getSingleResult();
+
+        java.util.Map<String, Object> reporte = new java.util.LinkedHashMap<>();
+        reporte.put("fechaInicio", fechaInicio);
+        reporte.put("fechaFin", fechaFin);
+        reporte.put("totalCompletados", toInt(stats[0]));
+        reporte.put("duracionPromedio", stats[1]);
+        reporte.put("completadosATiempo", toInt(stats[2]));
+        reporte.put("completadosTarde", toInt(stats[3]));
+        
+        reporte.put("mantenimientos", completados.stream().map(r -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("mantId", r[0]);
+            m.put("mantTitulo", str(r[1]));
+            m.put("mantFechaIni", r[2]);
+            m.put("mantFechaFin", r[3]);
+            m.put("parqNombre", str(r[4]));
+            m.put("responsableNombre", str(r[5]));
+            m.put("duracionDias", r[6]);
+            return m;
+        }).collect(Collectors.toList()));
+
+        return reporte;
+    }
+
+    /**
+     * Programar tareas de mantenimiento masivamente
+     * Permite crear múltiples mantenimientos con plantilla base
+     */
+    @Transactional
+    public List<MantenimientoDTO> programarTareas(java.util.Map<String, Object> programacion) {
+        List<Integer> parqueIds = (List<Integer>) programacion.get("parqueIds");
+        List<Integer> tipoIds = (List<Integer>) programacion.get("tipoIds");
+        String fechaInicio = (String) programacion.get("fechaInicio");
+        Integer diasDuracion = (Integer) programacion.get("diasDuracion");
+        Integer responsableId = (Integer) programacion.get("responsableId");
+        String tituloTemplate = (String) programacion.get("tituloTemplate");
+        Integer usuarioId = (Integer) programacion.get("usuarioId");
+
+        List<MantenimientoDTO> creados = new ArrayList<>();
+
+        for (Integer parqueId : parqueIds) {
+            // Obtener nombre del parque para el título
+            String nombreParque = "";
+            try {
+                Object row = em.createNativeQuery(
+                    "SELECT parq_nombre FROM sc_sistema.tb_parque WHERE parq_id = " + parqueId
+                ).getSingleResult();
+                nombreParque = str(row);
+            } catch (Exception ignored) {}
+
+            // Crear mantenimiento programado
+            Mantenimiento m = new Mantenimiento();
+            m.setMantTitulo(tituloTemplate.replace("{parque}", nombreParque));
+            m.setMantFechaIni(java.time.LocalDate.parse(fechaInicio));
+            m.setMantFechaFin(java.time.LocalDate.parse(fechaInicio).plusDays(diasDuracion));
+            m.setParqId(parqueId);
+            m.setPersResponsable(responsableId);
+            m.setMantEstado("PENDIENTE");
+            m.setIdUsuario(usuarioId);
+            m.setTimaIds(tipoIds.toArray(new Integer[0]));
+            m.setMantObservacion("Mantenimiento programado automáticamente");
+
+            Mantenimiento saved = mantRepo.save(m);
+            creados.add(toDTO(saved));
+        }
+
+        return creados;
+    }
+
     private static String str(Object o)  { return o == null ? "" : o.toString(); }
     private static Integer toInt(Object o){ return o == null ? null : ((Number) o).intValue(); }
 }

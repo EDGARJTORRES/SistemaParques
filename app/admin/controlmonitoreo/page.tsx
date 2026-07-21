@@ -1025,10 +1025,10 @@ function MonitoreoCard({
                       <span className="text-muted-foreground font-mono">
                         Nueva fecha: <b>{new Date(a.amplFechaNva + "T00:00:00").toLocaleDateString("es-PE")}</b>
                       </span>
-                      <Badge className={cn(
+                    <Badge className={cn(
                         "text-[8px] font-black border px-1.5 py-0 rounded-full",
-                        a.amplEstado === "APROBADA" ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400" :
-                        a.amplEstado === "RECHAZADA"? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400" :
+                        a.amplEstado === "APROBADO" ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400" :
+                        a.amplEstado === "RECHAZADO"? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400" :
                         "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400"
                       )}>
                         {a.amplEstado}
