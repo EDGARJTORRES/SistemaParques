@@ -19,18 +19,18 @@ public class AbastecimientoController {
         this.service = service;
     }
 
-    // ── Recursos de Materiales ────────────────────────────────────────────────
+    // ── RECURSOS DE MATERIALES ────────────────────────────────────────────────
 
-    /** Consultar recursos de materiales (lista todos los bienes de depe 156/158) */
+    /** Consultar todos los recursos de materiales */
     @GetMapping("/consultar-recursos-materiales")
     public ResponseEntity<List<BienDTO>> consultarRecursosMateriales() {
-        return ResponseEntity.ok(service.getBienesDisponibles());
+        return ResponseEntity.ok(service.consultarRecursosMateriales());
     }
 
-    /** Verificar disponibilidad de materiales (bienes sin asignación activa) */
+    /** Verificar disponibilidad de materiales */
     @GetMapping("/verificar-disponibilidad-materiales")
     public ResponseEntity<List<BienDTO>> verificarDisponibilidadMateriales() {
-        return ResponseEntity.ok(service.getBienesDisponibles());
+        return ResponseEntity.ok(service.verificarDisponibilidadMateriales());
     }
 
     /** Asignar recurso de materiales (crea o actualiza asignación) */

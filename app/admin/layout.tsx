@@ -414,7 +414,7 @@ function AdminSidebar({
                       "h-10 px-6 rounded-xl transition-all duration-200 font-bold",
                       isCollapsed ? "w-12 h-12 p-0 justify-center items-center" : "w-full",
                       isActive
-                        ? "bg-primary text-white hover:bg-primary/90 shadow-lg"
+                        ? "bg-primary text-white hover:bg-primary/90"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                     tooltip={{

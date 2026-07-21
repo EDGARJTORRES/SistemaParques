@@ -277,10 +277,10 @@ export function LoginForm() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password}
               onChange={(e) => { setPassword(e.target.value); if (error) setError(null) }}
-              className="pl-10 pr-10 h-12 bg-secondary/900 border-border dark:border-foreground"
+              className="pl-10 h-12 bg-secondary/900 border-border dark:border-foreground hover:border-primary"
               autoComplete="current-password" />
             <button type="button" onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:border-primary transition-colors">
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>

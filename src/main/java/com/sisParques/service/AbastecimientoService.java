@@ -36,11 +36,14 @@ public class AbastecimientoService {
         this.detalleRepo    = detalleRepo;
         this.obreroRepo     = obreroRepo;
     }
-
     // ── BIENES ────────────────────────────────────────────────────────────────
 
-    /** Verificar disponibilidad de materiales (bienes sin asignación activa) */
-    public List<BienDTO> getBienesDisponibles() {
+    /**
+     * Consultar todos los recursos de materiales
+     * Bienes pertenecientes a las dependencias 156 y 158.
+     */
+    public List<BienDTO> consultarRecursosMateriales() {
+
         String sql =
             "SELECT " +
             "  bd.bien_id, " +
@@ -51,28 +54,55 @@ public class AbastecimientoService {
             "  bd.biendepe_obs, " +
             "  CAST(b.bien_est AS VARCHAR) " +
             "FROM sc_inventario.tb_bien_dependencia bd " +
-            "JOIN sc_inventario.tb_bien   b ON b.bien_id = bd.bien_id " +
-            "JOIN sc_inventario.tb_objeto o ON o.obj_id  = b.obj_id " +
+            "JOIN sc_inventario.tb_bien b " +
+            "  ON b.bien_id = bd.bien_id " +
+            "JOIN sc_inventario.tb_objeto o " +
+            "  ON o.obj_id = b.obj_id " +
             "WHERE bd.depe_id IN (156, 158) " +
             "ORDER BY o.obj_nombre";
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(sql).getResultList();
 
-        return rows.stream().map(r -> {
-            BienDTO d = new BienDTO();
-            d.setBienId(toLong(r[0]));
-            d.setBienDepeId(toLong(r[1]));
-            d.setObjNombre(str(r[2]));
-            d.setBienNumSerie(str(r[3]));
-            d.setBienPlaca(str(r[4]));
-            d.setBienObs(str(r[5]));
-            d.setBienEst(str(r[6]));
-            return d;
-        }).collect(Collectors.toList());
+        return rows.stream().map(this::mapBienDTO)
+                    .collect(Collectors.toList());
     }
 
-    // ── PERSONAL ──────────────────────────────────────────────────────────────
+
+    /**
+     * Verificar disponibilidad de materiales.
+     */
+    public List<BienDTO> verificarDisponibilidadMateriales() {
+
+        String sql =
+            "SELECT " +
+            "  bd.bien_id, " +
+            "  bd.biendepe_id, " +
+            "  o.obj_nombre, " +
+            "  b.bien_numserie, " +
+            "  b.bien_placa, " +
+            "  bd.biendepe_obs, " +
+            "  CAST(b.bien_est AS VARCHAR) " +
+            "FROM sc_inventario.tb_bien_dependencia bd " +
+            "JOIN sc_inventario.tb_bien b " +
+            "  ON b.bien_id = bd.bien_id " +
+            "JOIN sc_inventario.tb_objeto o " +
+            "  ON o.obj_id = b.obj_id " +
+            "WHERE bd.depe_id IN (156, 158) " +
+            "AND NOT EXISTS ( " +
+            "    SELECT 1 " +
+            "    FROM sc_sistema.tb_asignacion_detalle am  " +
+            "    WHERE am.bien_id = bd.bien_id " +
+            "    AND am.estado = 'ASIGNADO' " +
+            ") " +
+            "ORDER BY o.obj_nombre";
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql).getResultList();
+
+        return rows.stream().map(this::mapBienDTO)
+                    .collect(Collectors.toList());
+    }
 
     /** Consultar personal del mantenimiento */
     public List<PersonaDTO> getPersonal() {
@@ -108,15 +138,14 @@ public class AbastecimientoService {
         }).collect(Collectors.toList());
     }
 
-    // ── OBREROS ───────────────────────────────────────────────────────────────
-
     /** Lista obreros registrados con datos de persona */
     public List<ObreroDTO> getObreros() {
         List<Obrero> obreros = obreroRepo.findAll();
         return obreros.stream().map(this::enrichObrero).collect(Collectors.toList());
     }
+    
+    /** Asignar recurso del personal (registra obrero si no existe) */
 
-    /** Registra una persona como obrero (si ya existe lo devuelve) */
     @Transactional
     public ObreroDTO registrarObrero(Integer persId) {
         return obreroRepo.findByPersId(persId)
@@ -249,6 +278,18 @@ public class AbastecimientoService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+    private BienDTO mapBienDTO(Object[] row) {
+        BienDTO dto = new BienDTO();
+        dto.setBienId(toLong(row[0]));
+        dto.setBienDepeId(toLong(row[1]));
+        dto.setObjNombre(str(row[2]));
+        dto.setBienNumSerie(str(row[3]));
+        dto.setBienPlaca(str(row[4]));
+        dto.setBienObs(str(row[5]));
+        dto.setBienEst(str(row[6]));
+
+        return dto;
+    }
 
     private AsignacionDTO toDTO(Asignacion a) {
         AsignacionDTO dto = new AsignacionDTO();

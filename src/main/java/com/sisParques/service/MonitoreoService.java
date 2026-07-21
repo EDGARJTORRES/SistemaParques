@@ -51,8 +51,7 @@ public class MonitoreoService {
     }
 
     /**
-     * Marca/desmarca un tipo como completado (upsert) y verifica si con este
-     * cambio el mantenimiento queda completado al 100%.
+     * Registra cierre de Mantenimiento(Completado)
      */
     @Transactional
     public Map<String, Object> toggleProgress(Integer mantId, Integer timaId, Map<String, Object> body) {

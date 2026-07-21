@@ -598,7 +598,6 @@ function MonitoreoCard({
   const timaIds: number[] = item.timaIds ?? []
 
   const fetchProgress = useCallback(async () => {
-    if (!expanded) return
     setLoadingProgress(true)
     try {
       const [pRes, aRes] = await Promise.all([
@@ -612,7 +611,7 @@ function MonitoreoCard({
     } finally {
       setLoadingProgress(false)
     }
-  }, [item.mantId, expanded])
+  }, [item.mantId])
 
   useEffect(() => {
     fetchProgress()
@@ -795,7 +794,7 @@ function MonitoreoCard({
             >
               <FileText className="h-4 w-4" />
               <span className="hidden lg:inline text-[10px] font-bold">
-                Exportar
+                Exportar reporte completo
               </span>
             </Button>
           )}
@@ -824,7 +823,7 @@ function MonitoreoCard({
             >
               <FileWarning className="h-4 w-4" />
               <span className="hidden lg:inline text-[10px] font-bold">
-                Exportar
+                Exportar reporte de incumplimiento
               </span>
             </Button>
           )}
